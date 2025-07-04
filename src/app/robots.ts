@@ -7,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: '/',
       disallow: '/private/',
     },
-    sitemap: 'https://next-connect.com/sitemap.ts',
+    sitemap: 'https://nexconnectt.com/sitemap.ts',
   }
 }
