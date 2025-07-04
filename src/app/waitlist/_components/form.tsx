@@ -31,7 +31,7 @@ const formSchema = z.object({
   city: z.string().min(2, "City is required"),
   state: z.string().min(1, "Please select your state"),
   gender: z.string().min(1, "Please select your gender"),
-  lookingFor: z.string().min(1, "Please select what you're looking for"),
+  lookingFor: z.string().min(1, "Please select what you&apos;re looking for"),
 });
 
 const Waitlist = () => {
@@ -50,7 +50,7 @@ const Waitlist = () => {
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async () => {
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     setIsSubmitted(true);
@@ -62,10 +62,10 @@ const Waitlist = () => {
         </div>
         <div>
           <div className="font-bold text-slate-800">
-            You're on the waitlist! 🎉
+            You&apos;re on the waitlist! 🎉
           </div>
           <div className="text-slate-600 text-sm">
-            We'll notify you as soon as DesiBandhan launches. Thank you for
+            We&apos;ll notify you as soon as DesiBandhan launches. Thank you for
             joining!
           </div>
         </div>
@@ -88,11 +88,11 @@ const Waitlist = () => {
               <CheckCircle className="w-10 h-10 text-white" />
             </div>
             <h3 className="text-3xl font-bold text-slate-800 mb-4">
-              You're on the list! 🎉
+              You&apos;re on the list! 🎉
             </h3>
             <p className="text-lg text-slate-600 mb-6">
-              Thank you for joining DesiBandhan's exclusive waitlist. We'll keep
-              you updated on our launch and send you early access when we're
+              Thank you for joining DesiBandhan&apos;s exclusive waitlist. We&apos;ll keep
+              you updated on our launch and send you early access when we&apos;re
               ready!
             </p>
             <div className="flex items-center justify-center gap-4 text-sm text-slate-500 mb-8">
@@ -393,10 +393,10 @@ const Waitlist = () => {
 
                 <div className="text-center">
                   <p className="text-sm text-slate-500">
-                    By joining, you agree to receive updates about DesiBandhan's
+                    By joining, you agree to receive updates about DesiBandhan&apos;s
                     launch.
                     <br />
-                    We respect your privacy and won't spam you.
+                    We respect your privacy and won&apos;t spam you.
                   </p>
                 </div>
               </form>
