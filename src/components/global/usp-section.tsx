@@ -1,3 +1,4 @@
+"use client";
 
 
 import { Shield, Heart, Users } from "lucide-react";

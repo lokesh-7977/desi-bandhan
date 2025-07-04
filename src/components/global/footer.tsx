@@ -1,4 +1,4 @@
-
+"use client";
 
 import { Heart, Shield, Clock, Users } from "lucide-react";
 import { useLanguage } from "@/contexts/language-context";
