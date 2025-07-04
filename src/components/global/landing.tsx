@@ -9,9 +9,9 @@ export default function Landing() {
   return (
     <>
       <HeroSection />
-      <TestimonialsCarousel />
-      <HowItWorksSection />
       <USPSection />
+      <HowItWorksSection />
+      <TestimonialsCarousel />
       <Footer />
     </>
   );
