@@ -1,4 +1,5 @@
 "use client";
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -223,7 +224,7 @@ const Waitlist = () => {
                         <FormControl>
                           <Input
                             type="tel"
-                            placeholder="+91 9876543210"
+                            placeholder="9876543210"
                             className="h-12 rounded-xl border-slate-200 focus:border-brand-primary focus:ring-brand-primary/20 transition-all duration-300"
                             {...field}
                           />
