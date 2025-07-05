@@ -20,7 +20,7 @@ export const WaitlistForm = createServerAction()
   .handler(async ({ input: formData }) => {
     try {
       const client = await clientPromise;
-      const db = client.db("desi");
+      const db = client.db("desi-bandhan");
       const collection = db.collection("waitlist");
 
       const email = formData.email.trim().toLowerCase();
