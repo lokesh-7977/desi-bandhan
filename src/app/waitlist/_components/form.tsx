@@ -27,25 +27,24 @@ import * as z from "zod";
 import { Heart, Sparkles, Users, CheckCircle, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
-import { format, parse } from "date-fns";
+import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import "react-day-picker/dist/style.css";
-import { CalendarIcon } from "lucide-react"; // optional, for calendar icon
+import { CalendarIcon } from "lucide-react"; 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
 
-const formatDate = (date: Date) => format(date, "dd/MM/yyyy");
+const formatDate = (date: Date) => format(date, "yyyy-MM-dd");
 
 const formSchema = z.object({
   fullName: z.string().min(2, "Full name must be at least 2 characters"),
   email: z.string().email("Please enter a valid email address"),
-  // phone: z.string().min(10, "Please enter a valid phone number"),
-  dateOfBirth: z.string(),
+  dateOfBirth: z.string().min(1, "Date of birth is required"),
   city: z.string().min(2, "City is required"),
   state: z.string().min(1, "Please select your state"),
   gender: z.string().min(1, "Please select your gender"),
-  lookingFor: z.string().min(1, "Please select what you&apos;re looking for"),
+  lookingFor: z.string().min(1, "Please select what you're looking for"),
 });
 
 const Waitlist = () => {
@@ -67,48 +66,55 @@ const Waitlist = () => {
   const { execute: submit } = useServerAction(WaitlistForm);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const formData = {
+    email: values.email,
+    name: values.fullName,
+    dateOfBirth: values.dateOfBirth,
+    city: values.city,
+    state: values.state,
+    gender: values.gender,
+    lookingFor: values.lookingFor,
+  };
 
-    
-    const formData = {
-      email: values.email,
-      name: values.fullName,
-      dateOfBirth: values.dateOfBirth,
-      city: values.city,
-      state: values.state,
-      gender: values.gender,
-      lookingFor: values.lookingFor,
-    };
-    console.log(formData);
-    const [result, error] = await submit(formData);
+  const [res, error] = await submit(formData);
 
-    if (error) {
-      console.log(error);
-      toast.error(error.message);
-      return;
+  if (error) {
+    if (error.message.includes("email")) {
+      form.setError("email", {
+        type: "server",
+        message: error.message,
+      });
+    } else if (error.message.includes("phone")) {
+      form.setError("fullName", {
+        type: "server",
+        message: error.message, 
+      });
     }
 
-    setIsSubmitted(true);
+    toast.error(error.message); 
+    return;
+  }
 
-    toast.success(
-      <div className="flex items-center gap-3">
-        <div>
-          <div className="font-bold text-slate-800">
-            You&apos;re on the waitlist! 🎉
-          </div>
-          <div className="text-slate-600 text-sm">
-            We&apos;ll notify you as soon as DesiBandhan launches. Thank you for
-            joining!
-          </div>
+  setIsSubmitted(true);
+  toast.success(
+    <div className="flex items-center gap-3">
+      <div>
+        <div className="font-bold text-slate-800">
+          You&apos;re on the waitlist! 🎉
         </div>
-      </div>,
-      {
-        duration: 5000,
-        className:
-          "bg-white border border-brand-primary/30 shadow-lg rounded-xl px-4 py-3",
-        position: "top-center",
-      }
-    );
-  };
+        <div className="text-slate-600 text-sm">
+          We&apos;ll notify you as soon as DesiBandhan launches. Thank you for joining!
+        </div>
+      </div>
+    </div>,
+    {
+      duration: 5000,
+      className: "bg-white border border-brand-primary/30 shadow-lg rounded-xl px-4 py-3",
+      position: "top-center",
+    }
+  );
+};
+
 
   if (isSubmitted) {
     return (
@@ -260,7 +266,7 @@ const Waitlist = () => {
                                 )}
                               >
                                 <CalendarIcon className="mr-2 h-4 w-4" />
-                                {field.value ? formatDate(new Date(field.value)) : "Pick a date"}
+                                {field.value ? format(new Date(field.value), "dd/MM/yyyy") : "Pick a date"}
                               </Button>
                             </FormControl>
                           </PopoverTrigger>
@@ -269,7 +275,7 @@ const Waitlist = () => {
                               mode="single"
                               selected={field.value ? new Date(field.value) : undefined}
                               onSelect={(date) => {
-                                field.onChange(date ? formatDate(date) : ""); // formatted to dd/MM/yyyy
+                                field.onChange(date ? formatDate(date) : "");
                               }}
                               className="rounded-lg border"
                             />
