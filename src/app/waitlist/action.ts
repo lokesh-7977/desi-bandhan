@@ -7,12 +7,12 @@ import { createServerAction } from "zsa";
 
 const waitlistSchema = z.object({
   email: z.string().email(),
-  name: z.string().optional(),
-  phone: z.string().optional(),
-  dateOfBirth: z.string().optional(),
-  city: z.string().optional(),
-  state: z.string().optional(),
-  gender: z.string().optional(),
+  name: z.string().min(1, "Name is required"),
+  dateOfBirth: z.string().min(1, "Date of birth is required"),
+  city: z.string().min(1, "City is required"),
+  state: z.string().min(1, "State is required"),
+  gender: z.string().min(1, "Gender is required"),
+  lookingFor: z.string().min(1, "Looking for is required"),
 });
 
 export const WaitlistForm = createServerAction()
@@ -23,76 +23,71 @@ export const WaitlistForm = createServerAction()
       const db = client.db("desi");
       const collection = db.collection("waitlist");
 
-      const email = formData.email.trim().toLowerCase(); // Normalize email case
-      const phone = formData.phone?.trim();
+      const email = formData.email.trim().toLowerCase();
 
-      // 🔍 Step 1: Check if email already exists (case-insensitive)
-      const emailExists = await collection.findOne({ 
-        email: { $regex: new RegExp(`^${email}$`, 'i') }
-      });
+      // Check if email already exists
+      const emailExists = await collection.findOne({ email });
 
       if (emailExists) {
-        throw new Error("This email is already on the waitlist.");
-      }
-
-      // 🔍 Step 2 (Optional): Check if phone exists, only if provided
-      if (phone) {
-        const phoneExists = await collection.findOne({ phone });
-        if (phoneExists) {
-          throw new Error("This phone number is already on the waitlist.");
-        }
-      }
-
-      // 📝 Step 3: Normalize and insert
-      const trimmedName = formData.name?.trim() || "";
-      const [firstName = null, lastName = null] = trimmedName
-        ? trimmedName.split(" ")
-        : [];
-
-      const doc = {
-        firstName,
-        lastName,
-        fullName: trimmedName || null,
-        email, // Already normalized above
-        phone: phone || null,
-        dateOfBirth: formData.dateOfBirth || null,
-        city: formData.city?.trim() || null,
-        state: formData.state?.trim() || null,
-        gender: formData.gender?.trim() || null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-      // Try to insert with duplicate key error handling
-      const result = await collection.insertOne(doc);
-
-      if (!result.acknowledged) {
-        throw new Error("Failed to add to waitlist.");
-      }
-
-      revalidatePath("/");
-      return { success: true, message: "You're on the waitlist!" };
-      
-    } catch (error) {
-      console.error("WaitlistForm error:", error);
-      
-      if (typeof error === "object" && error !== null) {
         return {
           success: false,
           message: "This email is already on the waitlist.",
         };
       }
-      
-      if (error instanceof Error && error.message.includes("already on the waitlist")) {
+
+      const trimmedName = formData.name.trim();
+      const [firstName = "", ...lastNameParts] = trimmedName.split(" ");
+      const lastName = lastNameParts.join(" ");
+
+      const doc = {
+        firstName: firstName || null,
+        lastName: lastName || null,
+        fullName: trimmedName,
+        email,
+        dateOfBirth: formData.dateOfBirth.trim(),
+        city: formData.city.trim(),
+        state: formData.state.trim(),
+        gender: formData.gender.trim(),
+        lookingFor: formData.lookingFor.trim(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      const result = await collection.insertOne(doc);
+
+      if (!result.acknowledged) {
         return {
           success: false,
-          message: error.message,
+          message: "Failed to add to waitlist. Please try again later.",
+        };
+      }
+
+      revalidatePath("/");
+      return {
+        success: true,
+        message: "You're on the waitlist!",
+      };
+
+    } catch (error) {
+      
+      // Handle MongoDB duplicate key error
+      if (typeof error === "object" && error !== null && "code" in error && (error as { code?: number }).code === 11000) {
+        return {
+          success: false,
+          message: "This email is already on the waitlist.",
+        };
+      }
+
+      if (error instanceof Error) {
+        return {
+          success: false,
+          message: error.message || "Something went wrong. Please try again.",
         };
       }
       
-      return { 
-        success: false, 
-        message: "Something went wrong. Please try again." 
+      return {
+        success: false,
+        message: "Unexpected error. Please try again.",
       };
     }
   });

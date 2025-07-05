@@ -34,7 +34,6 @@ import { CalendarIcon } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
-
 const formatDate = (date: Date) => format(date, "yyyy-MM-dd");
 
 const formSchema = z.object({
@@ -66,67 +65,56 @@ const Waitlist = () => {
   const { execute: submit } = useServerAction(WaitlistForm);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-  const formData = {
-    email: values.email,
-    name: values.fullName,
-    dateOfBirth: values.dateOfBirth,
-    city: values.city,
-    state: values.state,
-    gender: values.gender,
-    lookingFor: values.lookingFor,
-  };
+    const formData = {
+      email: values.email,
+      name: values.fullName,
+      dateOfBirth: values.dateOfBirth,
+      city: values.city,
+      state: values.state,
+      gender: values.gender,
+      lookingFor: values.lookingFor,
+    };
 
-  const error = await submit(formData);
+    const [result, error] = await submit(formData);
 
-  if (error) {
-    let message = "";
-    type ErrorWithMessage = { message: string };
-    if (Array.isArray(error)) {
-      if (error[0] && typeof error[0] === "object" && "message" in error[0]) {
-        message = (error[0] as ErrorWithMessage).message;
-      } else if (error[1] && typeof error[1] === "object" && "message" in error[1]) {
-        message = (error[1] as ErrorWithMessage).message;
+    if (!result?.success) {
+      const message = result?.message || error?.message || "Something went wrong.";
+
+      if (message.includes("email")) {
+        form.setError("email", {
+          type: "server",
+          message,
+        });
+      } else if (message.includes("phone")) {
+        form.setError("fullName", {
+          type: "server",
+          message,
+        });
       }
-    } else if (typeof error === "object" && error && "message" in error) {
-      message = (error as ErrorWithMessage).message;
+
+      toast.error(message);
+      return;
     }
 
-    if (message.includes("email")) {
-      form.setError("email", {
-        type: "server",
-        message,
-      });
-    } else if (message.includes("phone")) {
-      form.setError("fullName", {
-        type: "server",
-        message,
-      });
-    }
-
-    toast.error(message);
-    return;
-  }
-
-  setIsSubmitted(true);
-  toast.success(
-    <div className="flex items-center gap-3">
-      <div>
-        <div className="font-bold text-slate-800">
-          You&apos;re on the waitlist! 🎉
+    setIsSubmitted(true);
+    toast.success(
+      <div className="flex items-center gap-3">
+        <div>
+          <div className="font-bold text-slate-800">
+            You&apos;re on the waitlist! 🎉
+          </div>
+          <div className="text-slate-600 text-sm">
+            We&apos;ll notify you as soon as DesiBandhan launches.
+          </div>
         </div>
-        <div className="text-slate-600 text-sm">
-          We&apos;ll notify you as soon as DesiBandhan launches. Thank you for joining!
-        </div>
-      </div>
-    </div>,
-    {
-      duration: 5000,
-      className: "bg-white border border-brand-primary/30 shadow-lg rounded-xl px-4 py-3",
-      position: "top-center",
-    }
-  );
-};
-
+      </div>,
+      {
+        duration: 5000,
+        className: "bg-white border border-brand-primary/30 shadow-lg rounded-xl px-4 py-3",
+        position: "top-center",
+      }
+    );
+  };
 
   if (isSubmitted) {
     return (
@@ -273,7 +261,7 @@ const Waitlist = () => {
                               <Button
                                 variant="outline"
                                 className={cn(
-                                  "w-full h-12 justify-start text-left font-normal rounded-xl border-slate-200",
+                                  "w-full h-12 justify-start text-left font-normal rounded-xl border-slate-200 focus:border-brand-primary focus:ring-brand-primary/20",
                                   !field.value && "text-muted-foreground"
                                 )}
                               >
@@ -282,14 +270,16 @@ const Waitlist = () => {
                               </Button>
                             </FormControl>
                           </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0">
-                          <Calendar
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
                               mode="single"
                               selected={field.value ? new Date(field.value) : undefined}
                               onSelect={(date) => {
                                 field.onChange(date ? formatDate(date) : "");
                               }}
                               className="rounded-lg border"
+                              disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
+                              initialFocus
                             />
                           </PopoverContent>
                         </Popover>
@@ -328,22 +318,22 @@ const Waitlist = () => {
                         </FormLabel>
                         <Select
                           onValueChange={field.onChange}
-                          defaultValue={field.value}
+                          value={field.value}
                         >
                           <FormControl>
-                            <SelectTrigger className="h-24 w-full rounded-xl border-slate-200 focus:border-brand-primary focus:ring-brand-primary/20">
+                            <SelectTrigger className="h-12 w-full rounded-xl border-slate-200 focus:border-brand-primary focus:ring-brand-primary/20">
                               <SelectValue placeholder="Select your state" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent className="max-h-96 overflow-y-auto">
-                          {states.map((state) => {
-                            const value = state.name.toLowerCase().replace(/\s+/g, '-');
-                            return (
-                              <SelectItem key={value} value={value}>
-                                {state.name}
-                              </SelectItem>
-                            );
-                          })}
+                            {states.map((state) => {
+                              const value = state.name.toLowerCase().replace(/\s+/g, '-');
+                              return (
+                                <SelectItem key={value} value={value}>
+                                  {state.name}
+                                </SelectItem>
+                              );
+                            })}
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -361,10 +351,10 @@ const Waitlist = () => {
                         </FormLabel>
                         <Select
                           onValueChange={field.onChange}
-                          defaultValue={field.value}
+                          value={field.value}
                         >
                           <FormControl>
-                            <SelectTrigger className="h-24 w-full rounded-xl border-slate-200 focus:border-brand-primary focus:ring-brand-primary/20">
+                            <SelectTrigger className="h-12 w-full rounded-xl border-slate-200 focus:border-brand-primary focus:ring-brand-primary/20">
                               <SelectValue placeholder="Select gender" />
                             </SelectTrigger>
                           </FormControl>
@@ -395,10 +385,10 @@ const Waitlist = () => {
                       </FormLabel>
                       <Select
                         onValueChange={field.onChange}
-                        defaultValue={field.value}
+                        value={field.value}
                       >
                         <FormControl>
-                          <SelectTrigger className="h-24 w-full rounded-xl border-slate-200 focus:border-brand-primary focus:ring-brand-primary/20">
+                          <SelectTrigger className="h-12 w-full rounded-xl border-slate-200 focus:border-brand-primary focus:ring-brand-primary/20">
                             <SelectValue placeholder="Select your preference" />
                           </SelectTrigger>
                         </FormControl>
