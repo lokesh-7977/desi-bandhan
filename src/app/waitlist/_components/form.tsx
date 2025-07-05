@@ -76,22 +76,34 @@ const Waitlist = () => {
     lookingFor: values.lookingFor,
   };
 
-  const [res, error] = await submit(formData);
+  const error = await submit(formData);
 
   if (error) {
-    if (error.message.includes("email")) {
+    let message = "";
+    type ErrorWithMessage = { message: string };
+    if (Array.isArray(error)) {
+      if (error[0] && typeof error[0] === "object" && "message" in error[0]) {
+        message = (error[0] as ErrorWithMessage).message;
+      } else if (error[1] && typeof error[1] === "object" && "message" in error[1]) {
+        message = (error[1] as ErrorWithMessage).message;
+      }
+    } else if (typeof error === "object" && error && "message" in error) {
+      message = (error as ErrorWithMessage).message;
+    }
+
+    if (message.includes("email")) {
       form.setError("email", {
         type: "server",
-        message: error.message,
+        message,
       });
-    } else if (error.message.includes("phone")) {
+    } else if (message.includes("phone")) {
       form.setError("fullName", {
         type: "server",
-        message: error.message, 
+        message,
       });
     }
 
-    toast.error(error.message); 
+    toast.error(message);
     return;
   }
 

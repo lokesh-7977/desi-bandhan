@@ -76,15 +76,13 @@ export const WaitlistForm = createServerAction()
     } catch (error) {
       console.error("WaitlistForm error:", error);
       
-      // Handle MongoDB duplicate key errors
-      if (typeof error === "object" && error !== null && "code" in error && (error as any).code === 11000) {
+      if (typeof error === "object" && error !== null) {
         return {
           success: false,
           message: "This email is already on the waitlist.",
         };
       }
       
-      // Handle custom thrown errors
       if (error instanceof Error && error.message.includes("already on the waitlist")) {
         return {
           success: false,

@@ -4,6 +4,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Star, Quote, Heart } from "lucide-react";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 
 type CarouselApi = {
@@ -119,14 +120,14 @@ const TestimonialsCarousel = () => {
                                         
                                         <div className="flex items-center gap-4">
                                             <div className="relative">
-                                                <img
+                                                <Image
                                                     src={testimonial.avatar}
                                                     alt={testimonial.name}
                                                     width={56}
                                                     height={56}
                                                     className="w-12 h-12 md:w-14 md:h-14 rounded-full object-cover"
                                                     onError={(e) => {
-                                                        const target = e.target as HTMLImageElement;
+                                                        const target = e.currentTarget as HTMLImageElement;
                                                         target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(testimonial.name)}&background=667eea&color=fff&size=150`;
                                                     }}
                                                 />
