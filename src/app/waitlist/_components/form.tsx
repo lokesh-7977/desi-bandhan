@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useServerAction } from "zsa-react";
+import { WaitlistForm } from "../action";
+import states from "@/data/index.json";
 import {
   Select,
   SelectContent,
@@ -24,15 +27,24 @@ import * as z from "zod";
 import { Heart, Sparkles, Users, CheckCircle, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
+import { format } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
+import "react-day-picker/dist/style.css";
+import { CalendarIcon } from "lucide-react"; 
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+
+
+const formatDate = (date: Date) => format(date, "yyyy-MM-dd");
 
 const formSchema = z.object({
   fullName: z.string().min(2, "Full name must be at least 2 characters"),
   email: z.string().email("Please enter a valid email address"),
-  phone: z.string().min(10, "Please enter a valid phone number"),
+  dateOfBirth: z.string().min(1, "Date of birth is required"),
   city: z.string().min(2, "City is required"),
   state: z.string().min(1, "Please select your state"),
   gender: z.string().min(1, "Please select your gender"),
-  lookingFor: z.string().min(1, "Please select what you&apos;re looking for"),
+  lookingFor: z.string().min(1, "Please select what you're looking for"),
 });
 
 const Waitlist = () => {
@@ -43,7 +55,7 @@ const Waitlist = () => {
     defaultValues: {
       fullName: "",
       email: "",
-      phone: "",
+      dateOfBirth: "",
       city: "",
       state: "",
       gender: "",
@@ -51,34 +63,58 @@ const Waitlist = () => {
     },
   });
 
-  const onSubmit = async () => {
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+  const { execute: submit } = useServerAction(WaitlistForm);
 
-    setIsSubmitted(true);
-
-    toast.success(
-      <div className="flex items-center gap-3">
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand-primary to-brand-secondary flex items-center justify-center">
-          <CheckCircle className="w-5 h-5 text-white" />
-        </div>
-        <div>
-          <div className="font-bold text-slate-800">
-            You&apos;re on the waitlist! 🎉
-          </div>
-          <div className="text-slate-600 text-sm">
-            We&apos;ll notify you as soon as DesiBandhan launches. Thank you for
-            joining!
-          </div>
-        </div>
-      </div>,
-      {
-        duration: 5000,
-        className:
-          "bg-white border border-brand-primary/30 shadow-lg rounded-xl px-4 py-3",
-        position: "top-center",
-      }
-    );
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const formData = {
+    email: values.email,
+    name: values.fullName,
+    dateOfBirth: values.dateOfBirth,
+    city: values.city,
+    state: values.state,
+    gender: values.gender,
+    lookingFor: values.lookingFor,
   };
+
+  const [res, error] = await submit(formData);
+
+  if (error) {
+    if (error.message.includes("email")) {
+      form.setError("email", {
+        type: "server",
+        message: error.message,
+      });
+    } else if (error.message.includes("phone")) {
+      form.setError("fullName", {
+        type: "server",
+        message: error.message, 
+      });
+    }
+
+    toast.error(error.message); 
+    return;
+  }
+
+  setIsSubmitted(true);
+  toast.success(
+    <div className="flex items-center gap-3">
+      <div>
+        <div className="font-bold text-slate-800">
+          You&apos;re on the waitlist! 🎉
+        </div>
+        <div className="text-slate-600 text-sm">
+          We&apos;ll notify you as soon as DesiBandhan launches. Thank you for joining!
+        </div>
+      </div>
+    </div>,
+    {
+      duration: 5000,
+      className: "bg-white border border-brand-primary/30 shadow-lg rounded-xl px-4 py-3",
+      position: "top-center",
+    }
+  );
+};
+
 
   if (isSubmitted) {
     return (
@@ -215,20 +251,36 @@ const Waitlist = () => {
 
                   <FormField
                     control={form.control}
-                    name="phone"
+                    name="dateOfBirth"
                     render={({ field }) => (
                       <FormItem className="space-y-2">
-                        <FormLabel className="text-slate-700 font-medium">
-                          Phone Number
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            type="tel"
-                            placeholder="9876543210"
-                            className="h-12 rounded-xl border-slate-200 focus:border-brand-primary focus:ring-brand-primary/20 transition-all duration-300"
-                            {...field}
-                          />
-                        </FormControl>
+                        <FormLabel className="text-slate-700 font-medium">Date of Birth</FormLabel>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant="outline"
+                                className={cn(
+                                  "w-full h-12 justify-start text-left font-normal rounded-xl border-slate-200",
+                                  !field.value && "text-muted-foreground"
+                                )}
+                              >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {field.value ? format(new Date(field.value), "dd/MM/yyyy") : "Pick a date"}
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0">
+                          <Calendar
+                              mode="single"
+                              selected={field.value ? new Date(field.value) : undefined}
+                              onSelect={(date) => {
+                                field.onChange(date ? formatDate(date) : "");
+                              }}
+                              className="rounded-lg border"
+                            />
+                          </PopoverContent>
+                        </Popover>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -267,32 +319,19 @@ const Waitlist = () => {
                           defaultValue={field.value}
                         >
                           <FormControl>
-                            <SelectTrigger className="h-12 rounded-xl border-slate-200 focus:border-brand-primary focus:ring-brand-primary/20">
+                            <SelectTrigger className="h-24 w-full rounded-xl border-slate-200 focus:border-brand-primary focus:ring-brand-primary/20">
                               <SelectValue placeholder="Select your state" />
                             </SelectTrigger>
                           </FormControl>
-                          <SelectContent>
-                            <SelectItem value="andhra-pradesh">
-                              Andhra Pradesh
-                            </SelectItem>
-                            <SelectItem value="karnataka">Karnataka</SelectItem>
-                            <SelectItem value="tamil-nadu">
-                              Tamil Nadu
-                            </SelectItem>
-                            <SelectItem value="telangana">Telangana</SelectItem>
-                            <SelectItem value="kerala">Kerala</SelectItem>
-                            <SelectItem value="maharashtra">
-                              Maharashtra
-                            </SelectItem>
-                            <SelectItem value="gujarat">Gujarat</SelectItem>
-                            <SelectItem value="rajasthan">Rajasthan</SelectItem>
-                            <SelectItem value="punjab">Punjab</SelectItem>
-                            <SelectItem value="haryana">Haryana</SelectItem>
-                            <SelectItem value="delhi">Delhi</SelectItem>
-                            <SelectItem value="west-bengal">
-                              West Bengal
-                            </SelectItem>
-                            <SelectItem value="other">Other</SelectItem>
+                          <SelectContent className="max-h-96 overflow-y-auto">
+                          {states.map((state) => {
+                            const value = state.name.toLowerCase().replace(/\s+/g, '-');
+                            return (
+                              <SelectItem key={value} value={value}>
+                                {state.name}
+                              </SelectItem>
+                            );
+                          })}
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -313,7 +352,7 @@ const Waitlist = () => {
                           defaultValue={field.value}
                         >
                           <FormControl>
-                            <SelectTrigger className="h-12 rounded-xl border-slate-200 focus:border-brand-primary focus:ring-brand-primary/20">
+                            <SelectTrigger className="h-24 w-full rounded-xl border-slate-200 focus:border-brand-primary focus:ring-brand-primary/20">
                               <SelectValue placeholder="Select gender" />
                             </SelectTrigger>
                           </FormControl>
@@ -347,7 +386,7 @@ const Waitlist = () => {
                         defaultValue={field.value}
                       >
                         <FormControl>
-                          <SelectTrigger className="h-12 rounded-xl border-slate-200 focus:border-brand-primary focus:ring-brand-primary/20">
+                          <SelectTrigger className="h-24 w-full rounded-xl border-slate-200 focus:border-brand-primary focus:ring-brand-primary/20">
                             <SelectValue placeholder="Select your preference" />
                           </SelectTrigger>
                         </FormControl>
